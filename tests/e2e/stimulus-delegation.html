@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Delegation Mixin E2E Tests</title>
+  <script src="https://unpkg.com/@hotwired/stimulus"></script>
+  <style>
+    .container { padding: 20px; margin: 10px; border: 1px solid #ccc; }
+    .btn { padding: 8px 16px; margin: 4px; cursor: pointer; }
+    .primary { background: #007bff; color: white; }
+    .secondary { background: #6c757d; color: white; }
+    .log { background: #f8f9fa; padding: 10px; margin: 10px 0; font-family: monospace; }
+    .nested { padding: 10px; background: #e9ecef; margin: 5px; }
+    .card { border: 1px solid #dee2e6; padding: 15px; margin: 10px; }
+  </style>
+</head>
+<body>
+  
+  <div data-controller="delegation-test" data-delegation-test-name-value="Main">
+    <div class="log" data-delegation-test-target="log" id="main-log">No events yet</div>
+    
+    <div class="container">
+      <h3>Button Events</h3>
+      <button class="btn primary" data-action="save" id="save-btn">Save</button>
+      <button class="btn secondary" data-action="cancel" id="cancel-btn">Cancel</button>
+      <button class="btn" data-action="delete" id="delete-btn">Delete</button>
+    </div>
+
+    <div class="container">
+      <h3>Form Events</h3>
+      <form>
+        <input type="text" name="username" placeholder="Username" id="username-input" />
+        <input type="email" name="email" placeholder="Email" id="email-input" />
+        <select name="role" id="role-select">
+          <option value="">Select role</option>
+          <option value="admin">Admin</option>
+          <option value="user">User</option>
+        </select>
+      </form>
+    </div>
+
+    <div class="container">
+      <h3>Nested Elements</h3>
+      <div class="card" data-card-id="1">
+        <h4>Card 1</h4>
+        <span class="clickable">Click me (nested)</span>
+        <div class="nested">
+          <span class="deep-nested">Deep nested clickable</span>
+        </div>
+      </div>
+      <div class="card" data-card-id="2">
+        <h4>Card 2</h4>
+        <span class="clickable">Click me too</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <h3>Dynamic Content</h3>
+      <button id="add-dynamic" class="btn">Add Dynamic Button</button>
+      <div id="dynamic-container"></div>
+    </div>
+
+    <div class="container">
+      <h3>Controls</h3>
+      <button id="clear-log" class="btn">Clear Log</button>
+      <button id="disconnect-controller" class="btn secondary">Disconnect Controller</button>
+      <button id="reconnect-controller" class="btn primary">Reconnect Controller</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { useDelegation } from "https://cdn.jsdelivr.net/npm/@smnandre/stimulus-delegation@latest/dist/stimulus-delegation.es.js";
+    class DelegationTestController extends window.Stimulus.Controller {
+
+      static targets = ['log']
+      static values = { name: String }
+
+      initialize() {
+        // Mix in delegation methods
+        Object.assign(this, useDelegation)
+      }
+
+      connect() {
+        this.log('Controller connected')
+        
+        // Set up delegated event listeners
+        this.delegate('click', '.btn[data-action]', this.handleButtonClick)
+          .delegate('input', 'input', this.handleInput)
+          .delegate('change', 'select', this.handleChange)
+          .delegate('click', '.clickable', this.handleClickableClick)
+          .delegate('click', '.card', this.handleCardClick)
+          .delegate('mouseover', '.btn', this.handleButtonHover)
+      }
+
+      disconnect() {
+        this.log('Controller disconnected - cleaning up')
+        this.undelegateAll()
+      }
+
+      handleButtonClick(event, target) {
+        const action = target.dataset.action
+        this.log(`Button clicked: ${action} (${target.textContent.trim()})`)
+        
+        if (action === 'save') {
+          this.log('  → Saving data...')
+        } else if (action === 'cancel') {
+          this.log('  → Cancelling operation...')
+        } else if (action === 'delete') {
+          this.log('  → Deleting item...')
+        }
+      }
+
+      handleInput(event, target) {
+        const name = target.name || 'unnamed'
+        const value = target.value
+        this.log(`Input changed: ${name} = "${value}"`)
+      }
+
+      handleChange(event, target) {
+        const name = target.name || 'unnamed'
+        const value = target.value
+        this.log(`Select changed: ${name} = "${value}"`)
+      }
+
+      handleClickableClick(event, target) {
+        this.log(`Clickable clicked: "${target.textContent.trim()}"`)
+      }
+
+      handleCardClick(event, target) {
+        const cardId = target.dataset.cardId
+        this.log(`Card clicked: ${cardId}`)
+      }
+
+      handleButtonHover(event, target) {
+        const action = target.dataset.action || 'unknown'
+        this.log(`Button hovered: ${action}`)
+      }
+
+      log(message) {
+        const timestamp = new Date().toLocaleTimeString()
+        const current = this.logTarget.textContent
+        const newContent = current === 'No events yet' 
+          ? `[${timestamp}] ${message}`
+          : `${current}\n[${timestamp}] ${message}`
+        this.logTarget.textContent = newContent
+        this.logTarget.scrollTop = this.logTarget.scrollHeight
+      }
+    }
+
+    // Register controller
+    window.application = window.Stimulus.Application.start()
+    window.application.register('delegation-test', DelegationTestController)
+
+    // Add global event handlers for demo controls
+    document.getElementById('add-dynamic').addEventListener('click', () => {
+      const container = document.getElementById('dynamic-container')
+      const button = document.createElement('button')
+      button.className = 'btn primary'
+      button.dataset.action = 'dynamic'
+      button.textContent = `Dynamic ${container.children.length + 1}`
+      container.appendChild(button)
+    })
+
+    document.getElementById('clear-log').addEventListener('click', () => {
+      document.getElementById('main-log').textContent = 'No events yet'
+    })
+
+    document.getElementById('disconnect-controller').addEventListener('click', () => {
+      const element = document.querySelector('[data-controller="delegation-test"]')
+      element.removeAttribute('data-controller')
+    })
+
+    document.getElementById('reconnect-controller').addEventListener('click', () => {
+      const element = document.querySelector('[data-delegation-test-name-value]')
+      element.setAttribute('data-controller', 'delegation-test')
+    })
+  </script>
+</body>
+</html>

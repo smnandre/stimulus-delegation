@@ -1,0 +1,77 @@
+{
+  "name": "@smnandre/stimulus-delegation",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Efficient event delegation for Stimulus controllers - Automatic cleanup and dynamic content support.",
+  "main": "dist/stimulus-delegation.umd.js",
+  "module": "dist/stimulus-delegation.es.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/stimulus-delegation.es.js",
+      "require": "./dist/stimulus-delegation.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "clean": "rimraf dist",
+    "clean:coverage": "rimraf .nyc_output coverage",
+    "prepare": "npm run build",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "keywords": [
+    "stimulus",
+    "hotwired",
+    "event",
+    "delegation",
+    "mixin",
+    "typescript",
+    "dom",
+    "listeners",
+    "dynamic",
+    "performance",
+    "plugin",
+    "symfony",
+    "ux"
+  ],
+  "author": "smnandre",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smnandre/stimulus-delegation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smnandre/stimulus-delegation/issues"
+  },
+  "homepage": "https://github.com/smnandre/stimulus-delegation#readme",
+  "peerDependencies": {
+    "@hotwired/stimulus": "^3.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.5.0"
+  },
+  "devDependencies": {
+    "@hotwired/stimulus": "^3.2.1",
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "@vitest/coverage-istanbul": "^3.1.4",
+    "eslint": "^9.28.0",
+    "eslint-plugin-import": "^2.31.0",
+    "happy-dom": "^17.5.6",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.1.4"
+  }
+}
