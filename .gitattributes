@@ -3,6 +3,7 @@
 /tests                  export-ignore
 /.npmignore             export-ignore
 /eslint.config.js       export-ignore
+/playwright.config.ts   export-ignore
 /rollup.config.js       export-ignore
 /tsconfig.json          export-ignore
 /vite.config.ts         export-ignore
