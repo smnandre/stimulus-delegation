@@ -1,6 +1,6 @@
 {
   "name": "@smnandre/stimulus-delegation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Efficient event delegation for Stimulus controllers - Automatic cleanup and dynamic content support.",
   "main": "dist/stimulus-delegation.umd.js",

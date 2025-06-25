@@ -1,10 +1,10 @@
-# Stimulus Delegation: `useDelegation` Mixin
+# Stimulus Delegation: `useDelegation`
 
-A TypeScript-compatible mixin for Stimulus controllers that provides efficient event delegation capabilities. Handle
-events on dynamically added elements and nested structures without manual event listener management.
+A function for Stimulus controllers that provides efficient event delegation capabilities. Handle events on dynamically
+added elements and nested structures without manual event listener management.
 
 > [!TIP]
-> This mixin helps you wire up DOM event delegation in Stimulus controllers, both declaratively and imperatively,
+> This function helps you wire up DOM event delegation in Stimulus controllers, both declaratively and imperatively,
 > without the need for additional build steps or decorators.
 
 If you can, please consider [sponsoring](https://github.com/sponsors/smnandre) this project to support its development
@@ -39,40 +39,26 @@ import {useDelegation} from 'https://cdn.jsdelivr.net/npm/@smnandre/stimulus-del
 
 ```typescript
 import {Controller} from '@hotwired/stimulus';
-import {useDelegation, DelegationController} from '@smnandre/stimulus-delegation';
+import {useDelegation} from '@smnandre/stimulus-delegation';
 
-export default class extends Controller implements DelegationController {
-  delegatedEvents?: Map<string, EventListener>;
-
+export default class extends Controller {
   initialize() {
-    Object.assign(this, useDelegation);
+    // Pass the controller instance directly to the function
+    useDelegation(this);
   }
 
   connect() {
-    // Set up event delegation
+    // Still use the fluent API for setting up delegations
     this.delegate('click', '.btn[data-action]', this.handleButtonClick)
-      .delegate('input', 'input[type="text"]', this.handleTextInput)
-      .delegate('change', 'select', this.handleSelectChange);
+      .delegate('input', 'input[type="text"]', this.handleTextInput);
   }
 
-  disconnect() {
-    // Clean up all delegated events
-    this.undelegateAll();
+  handleButtonClick(event, target) {
+    console.log(`Button clicked: ${target.dataset.action}`);
   }
 
-  handleButtonClick(event: Event, target: Element) {
-    const action = (target as HTMLElement).dataset.action;
-    console.log(`Button clicked: ${action}`);
-  }
-
-  handleTextInput(event: Event, target: Element) {
-    const input = target as HTMLInputElement;
-    console.log(`Input changed: ${input.name} = ${input.value}`);
-  }
-
-  handleSelectChange(event: Event, target: Element) {
-    const select = target as HTMLSelectElement;
-    console.log(`Selection: ${select.value}`);
+  handleTextInput(event, target) {
+    console.log(`Input value: ${target.value}`);
   }
 }
 ```
@@ -108,16 +94,9 @@ this.undelegate('click', '.delete-btn');
 
 #### `undelegateAll()`
 
-Removes all delegated event listeners. Call this in your controller's `disconnect()` method.
+Removes all delegated event listeners. This is handled automatically when the controller disconnects, so you don't need to call it manually unless you want to remove all delegations before disconnect.
 
 - **Returns**: `this` - For method chaining
-
-```typescript
-disconnect()
-{
-  this.undelegateAll();
-}
-```
 
 ## Advanced Usage
 
@@ -142,7 +121,7 @@ this.delegate('click', '.delete-btn', this.handleDelete);
 
 ### Nested Elements
 
-The mixin uses `element.closest(selector)` to find matching ancestors:
+The delegation mechanism uses `element.closest(selector)` to find matching ancestors:
 
 ```html
 // HTML
@@ -159,9 +138,10 @@ The mixin uses `element.closest(selector)` to find matching ancestors:
 // Controller
 this.delegate('click', '.card', this.handleCardClick);
 
-handleCardClick(event: Event, target: Element){
+// Handler function
+function handleCardClick(event, target) {
   // target will be the .card element even if you click the span or button
-  const cardId = (target as HTMLElement).dataset.id;
+  const cardId = target.dataset.id;
   console.log(`Card ${cardId} clicked`);
 }
 ```
@@ -171,11 +151,13 @@ handleCardClick(event: Event, target: Element){
 Delegation automatically works with dynamically added elements:
 
 ```javascript
-connect() {
+// Connect method
+function connect() {
   this.delegate('click', '.dynamic-btn', this.handleDynamic);
 }
 
-addNewButton() {
+// Add new button method
+function addNewButton() {
   const button = document.createElement('button');
   button.className = 'dynamic-btn';
   button.textContent = 'New Button';
@@ -189,8 +171,8 @@ addNewButton() {
 Handlers are bound to the controller instance:
 
 ```typescript
-handleClick(event: Event, target: Element)
-{
+// Handler function
+function handleClick(event, target) {
   // `this` refers to the controller
   this.someMethod();
   console.log(this.element); // Controller's element
@@ -203,36 +185,32 @@ handleClick(event: Event, target: Element)
 
 ## TypeScript Integration
 
-### Interface Implementation
+To ensure type safety in your TypeScript project, you can inform the compiler that your controller has been enhanced with delegation capabilities.
+
+Declare the delegation methods on your controller class and TypeScript will recognize them.
 
 ```typescript
-import {useDelegation, DelegationController} from './mixins/use-delegation';
+import { Controller } from '@hotwired/stimulus'
+import { useDelegation, DelegationController } from '@smnandre/stimulus-delegation'
 
-interface MyController extends DelegationController {
-  handleClick(event: Event, target: Element): void;
-
-  handleInput(event: Event, target: Element): void;
-}
-
-export default class extends Controller implements MyController {
-  delegatedEvents?: Map<string, EventListener>;
+export default class extends Controller {
+  // Inform TypeScript about the added methods
+  delegate!: DelegationController['delegate']
+  undelegate!: DelegationController['undelegate']
+  undelegateAll!: DelegationController['undelegateAll']
 
   initialize() {
-    Object.assign(this, useDelegation);
+    useDelegation(this)
   }
 
-  // ... rest of implementation
+  connect() {
+    this.delegate('click', '.btn', this.handleClick)
+  }
+
+  handleClick(event: Event, target: Element) {
+    // handler logic
+  }
 }
-```
-
-### Helper Type
-
-```typescript
-import {WithDelegation} from './mixins/use-delegation';
-
-type MyControllerWithDelegation = WithDelegation<Controller> & {
-  someCustomMethod(): void;
-};
 ```
 
 ## Real-World Examples
@@ -242,7 +220,7 @@ type MyControllerWithDelegation = WithDelegation<Controller> & {
 ```typescript
 export default class extends Controller {
   initialize() {
-    Object.assign(this, useDelegation);
+    useDelegation(this)
   }
 
   connect() {
@@ -251,10 +229,6 @@ export default class extends Controller {
       .delegate('dblclick', '.todo-label', this.editTodo)
       .delegate('keypress', '.todo-edit', this.saveEdit)
       .delegate('blur', '.todo-edit', this.cancelEdit);
-  }
-
-  disconnect() {
-    this.undelegateAll();
   }
 
   toggleTodo(event: Event, target: Element) {
@@ -275,7 +249,7 @@ export default class extends Controller {
 ```typescript
 export default class extends Controller {
   initialize() {
-    Object.assign(this, useDelegation);
+    useDelegation(this)
   }
 
   connect() {
@@ -312,25 +286,40 @@ export default class extends Controller {
 ### Unit Tests
 
 ```typescript
-import {describe, it, expect, vi} from 'vitest';
-import {useDelegation} from './use-delegation';
+import { describe, it, expect, vi } from 'vitest'
+import { useDelegation } from '@smnandre/stimulus-delegation'
+import { Controller } from '@hotwired/stimulus'
 
 describe('useDelegation', () => {
   it('delegates events correctly', () => {
-    const controller = createTestController();
-    const handler = vi.fn();
-
-    controller.delegate('click', '.btn', handler);
-
-    const button = controller.element.querySelector('.btn');
-    button.click();
-
+    // Create a test controller
+    const controller = {
+      element: document.createElement('div'),
+      disconnect: () => {}
+    } as unknown as Controller
+    
+    // Add a button to test with
+    const button = document.createElement('button')
+    button.className = 'btn'
+    controller.element.appendChild(button)
+    
+    // Apply delegation
+    useDelegation(controller)
+    
+    // Set up delegation and handler
+    const handler = vi.fn()
+    controller.delegate('click', '.btn', handler)
+    
+    // Trigger event
+    button.click()
+    
+    // Verify handler was called with correct arguments
     expect(handler).toHaveBeenCalledWith(
       expect.any(MouseEvent),
       button
-    );
-  });
-});
+    )
+  })
+})
 ```
 
 ### E2E Tests
@@ -362,37 +351,14 @@ test('delegation works with dynamic content', async ({page}) => {
 
 ### Events Not Firing
 
-1. **Check selector specificity**: Ensure your CSS selector matches the intended elements
-2. **Verify event bubbling**: Some events don't bubble (e.g., `focus`, `blur`)
-3. **Element containment**: Events only fire for elements within the controller's scope
-
-### Memory Leaks
-
-Always call `undelegateAll()` in your `disconnect()` method:
-
-```typescript
-disconnect()
-{
-  this.undelegateAll(); // Essential for cleanup
-}
-```
-
-### TypeScript Errors
-
-Ensure proper interface implementation:
-
-```typescript
-// ✅ Correct
-class MyController extends Controller implements DelegationController {
-  delegatedEvents?: Map<string, EventListener>;
-}
-
-// ❌ Missing interface implementation
-class MyController extends Controller {
-  // TypeScript errors will occur
-}
-```
+1.  **Check selector specificity**: Ensure your CSS selector matches the intended elements
+2.  **Verify event bubbling**: Some events don't bubble (e.g., `focus`, `blur`)
+3.  **Element containment**: Events only fire for elements within the controller's scope
 
 ## License
 
-MIT License - feel free to use in your projects.
+Released under the [MIT License](LICENSE) by [Simon André](https://github.com/smnandre).
+
+---
+
+**[GitHub Repository](https://github.com/smnandre/stimulus-delegation) · [Report Issues](https://github.com/smnandre/stimulus-delegation/issues)**

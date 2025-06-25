@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Delegation Mixin E2E', () => {
+test.describe('Delegation E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/tests/e2e/delegation.html');
     await page.waitForLoadState('domcontentloaded');
